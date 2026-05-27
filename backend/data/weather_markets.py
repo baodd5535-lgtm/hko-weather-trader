@@ -18,6 +18,8 @@ CITY_ALIASES = {
     "los angeles": "los_angeles",
     "la": "los_angeles",
     "denver": "denver",
+    "hong kong": "hko",
+    "hk": "hko",
 }
 
 # Month name to number

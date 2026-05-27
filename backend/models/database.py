@@ -1,11 +1,10 @@
-"""Database models and connection for BTC 5-min trading bot."""
+"""Database models and connection for HKO Weather Trader."""
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, JSON, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import inspect
-import enum
 
 from backend.config import settings
 
@@ -26,10 +25,9 @@ class Trade(Base):
     market_ticker = Column(String, index=True)
     platform = Column(String)
     event_slug = Column(String, nullable=True)
-    market_type = Column(String, default="btc", index=True)  # "btc" or "weather"
+    market_type = Column(String, default="weather", index=True)  # "weather" only
 
-    # Trade details
-    direction = Column(String)  # "up" or "down"
+    direction = Column(String)  # "yes" or "no"
     entry_price = Column(Float)
     size = Column(Float)
     timestamp = Column(DateTime, default=datetime.utcnow)
@@ -37,7 +35,7 @@ class Trade(Base):
     # Settlement
     settled = Column(Boolean, default=False)
     settlement_time = Column(DateTime, nullable=True)
-    settlement_value = Column(Float, nullable=True)  # 1.0=Up won, 0.0=Down won
+    settlement_value = Column(Float, nullable=True)
     result = Column(String, default="pending")  # pending, win, loss
     pnl = Column(Float, nullable=True)
 
@@ -45,16 +43,6 @@ class Trade(Base):
     model_probability = Column(Float)
     market_price_at_entry = Column(Float)
     edge_at_entry = Column(Float)
-
-
-class BtcPriceSnapshot(Base):
-    """Cached BTC prices for momentum calculation."""
-    __tablename__ = "btc_price_snapshots"
-
-    id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
-    price = Column(Float)
-    source = Column(String, default="coingecko")
 
 
 class BotState(Base):
@@ -77,7 +65,7 @@ class Signal(Base):
     id = Column(Integer, primary_key=True, index=True)
     market_ticker = Column(String, index=True)
     platform = Column(String)
-    market_type = Column(String, default="btc", index=True)  # "btc" or "weather"
+    market_type = Column(String, default="weather", index=True)
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
 
     direction = Column(String)
@@ -94,33 +82,11 @@ class Signal(Base):
 
     executed = Column(Boolean, default=False)
 
-    # Calibration tracking — filled after settlement
-    actual_outcome = Column(String, nullable=True)    # "up" or "down" — actual market result
-    outcome_correct = Column(Boolean, nullable=True)   # did our direction prediction match?
-    settlement_value = Column(Float, nullable=True)     # 1.0=UP won, 0.0=DOWN won
-    settled_at = Column(DateTime, nullable=True)        # when we recorded the outcome
-
-
-class AILog(Base):
-    """Log of all AI API calls."""
-    __tablename__ = "ai_logs"
-
-    id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
-    provider = Column(String, index=True)
-    model = Column(String)
-
-    prompt = Column(String)
-    response = Column(String)
-    call_type = Column(String, index=True)
-
-    latency_ms = Column(Float)
-    tokens_used = Column(Integer)
-    cost_usd = Column(Float)
-
-    related_market = Column(String, nullable=True)
-    success = Column(Boolean, default=True)
-    error = Column(String, nullable=True)
+    # Calibration tracking
+    actual_outcome = Column(String, nullable=True)
+    outcome_correct = Column(Boolean, nullable=True)
+    settlement_value = Column(Float, nullable=True)
+    settled_at = Column(DateTime, nullable=True)
 
 
 class ScanLog(Base):
@@ -132,15 +98,9 @@ class ScanLog(Base):
     started_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
 
-    categories_scanned = Column(JSON)
-    platforms_scanned = Column(JSON)
-
     markets_found = Column(Integer, default=0)
     signals_generated = Column(Integer, default=0)
     trades_executed = Column(Integer, default=0)
-
-    ai_calls_made = Column(Integer, default=0)
-    ai_cost_usd = Column(Float, default=0.0)
 
     success = Column(Boolean, default=True)
     error = Column(String, nullable=True)
@@ -161,20 +121,15 @@ def ensure_schema():
         return
 
     if "event_slug" not in columns:
-        stmt = "ALTER TABLE trades ADD COLUMN event_slug VARCHAR"
-        if engine.dialect.name not in ("sqlite", "mysql"):
-            stmt = "ALTER TABLE trades ADD COLUMN IF NOT EXISTS event_slug VARCHAR"
-
         with engine.connect() as conn:
             with conn.begin():
-                conn.execute(text(stmt))
+                conn.execute(text("ALTER TABLE trades ADD COLUMN event_slug VARCHAR"))
 
     if "market_type" not in columns:
         with engine.connect() as conn:
             with conn.begin():
-                conn.execute(text("ALTER TABLE trades ADD COLUMN market_type VARCHAR DEFAULT 'btc'"))
+                conn.execute(text("ALTER TABLE trades ADD COLUMN market_type VARCHAR DEFAULT 'weather'"))
 
-    # Add calibration columns to signals table
     try:
         signal_columns = [col["name"] for col in inspector.get_columns("signals")]
     except Exception:
@@ -187,14 +142,14 @@ def ensure_schema():
                 ("outcome_correct", "BOOLEAN"),
                 ("settlement_value", "FLOAT"),
                 ("settled_at", "DATETIME"),
-                ("market_type", "VARCHAR DEFAULT 'btc'"),
+                ("market_type", "VARCHAR DEFAULT 'weather'"),
             ]:
                 if col not in signal_columns:
                     try:
                         with conn.begin():
                             conn.execute(text(f"ALTER TABLE signals ADD COLUMN {col} {coltype}"))
                     except Exception:
-                        pass  # column already exists
+                        pass
 
 
 def get_db():

@@ -9,47 +9,37 @@ import time
 
 logger = logging.getLogger("trading_bot")
 
-# City configurations with lat/lon and NWS station identifiers
+# City configurations with lat/lon
 CITY_CONFIG: Dict[str, dict] = {
+    "hko": {
+        "name": "Hong Kong",
+        "lat": 22.3080,
+        "lon": 114.1700,
+    },
     "nyc": {
         "name": "New York City",
         "lat": 40.7128,
         "lon": -74.0060,
-        "nws_station": "KNYC",
-        "nws_office": "OKX",
-        "nws_gridpoint": "OKX/33,37",
     },
     "chicago": {
         "name": "Chicago",
         "lat": 41.8781,
         "lon": -87.6298,
-        "nws_station": "KORD",
-        "nws_office": "LOT",
-        "nws_gridpoint": "LOT/75,72",
     },
     "miami": {
         "name": "Miami",
         "lat": 25.7617,
         "lon": -80.1918,
-        "nws_station": "KMIA",
-        "nws_office": "MFL",
-        "nws_gridpoint": "MFL/75,53",
     },
     "los_angeles": {
         "name": "Los Angeles",
         "lat": 34.0522,
         "lon": -118.2437,
-        "nws_station": "KLAX",
-        "nws_office": "LOX",
-        "nws_gridpoint": "LOX/154,44",
     },
     "denver": {
         "name": "Denver",
         "lat": 39.7392,
         "lon": -104.9903,
-        "nws_station": "KDEN",
-        "nws_office": "BOU",
-        "nws_gridpoint": "BOU/62,60",
     },
 }
 
