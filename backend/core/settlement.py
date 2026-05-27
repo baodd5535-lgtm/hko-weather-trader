@@ -200,31 +200,8 @@ async def check_weather_settlement(trade: Trade) -> Tuple[bool, Optional[float],
 
 
 async def _fetch_kalshi_resolution(ticker: str) -> Tuple[bool, Optional[float]]:
-    """Fetch resolution status for a Kalshi market."""
-    try:
-        from backend.data.kalshi_client import KalshiClient, kalshi_credentials_present
-
-        if not kalshi_credentials_present():
-            return False, None
-
-        client = KalshiClient()
-        data = await client.get_market(ticker)
-        market = data.get("market", data)
-
-        status = market.get("status", "")
-        result = market.get("result", "")
-
-        if status in ("finalized", "determined") and result:
-            if result == "yes":
-                return True, 1.0
-            elif result == "no":
-                return True, 0.0
-
-        return False, None
-
-    except Exception as e:
-        logger.warning(f"Failed to fetch Kalshi resolution for {ticker}: {e}")
-        return False, None
+    """Kalshi resolution — disabled (no longer supported)."""
+    return False, None
 
 
 async def settle_pending_trades(db: Session) -> List[Trade]:

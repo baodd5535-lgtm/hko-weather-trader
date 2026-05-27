@@ -163,17 +163,8 @@ async def scan_for_weather_signals() -> List[WeatherTradingSignal]:
     except Exception as e:
         logger.error(f"Failed to fetch Polymarket weather markets: {e}")
 
-    # Kalshi
-    if settings.KALSHI_ENABLED:
-        try:
-            from backend.data.kalshi_client import kalshi_credentials_present
-            from backend.data.kalshi_markets import fetch_kalshi_weather_markets
-            if kalshi_credentials_present():
-                kalshi_markets = await fetch_kalshi_weather_markets(city_keys)
-                markets.extend(kalshi_markets)
-                logger.info(f"Kalshi: {len(kalshi_markets)} weather markets")
-        except Exception as e:
-            logger.error(f"Failed to fetch Kalshi weather markets: {e}")
+    # Kalshi — disabled (no longer supported)
+    pass
 
     logger.info(f"Found {len(markets)} total weather temperature markets")
 
